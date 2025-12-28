@@ -57,12 +57,36 @@
           <h2>Backend table</h2>
           <p class="muted">Live status from mlx-services with collection rollups.</p>
         </div>
+        <div class="runtime-card outlined" id="llmRuntimePanel">
+          <div class="runtime-header">
+            <div class="geom">LLM runtime</div>
+            <div id="llmRuntimeStatus" class="muted">Idle</div>
+          </div>
+          <div class="runtime-metrics">
+            <div><span class="muted">Loaded</span><span id="llmRuntimeLoaded">-</span></div>
+            <div><span class="muted">Model</span><span id="llmRuntimeModel">-</span></div>
+            <div><span class="muted">Type</span><span id="llmRuntimeType">-</span></div>
+            <div><span class="muted">Queue</span><span id="llmRuntimeQueue">-</span></div>
+            <div><span class="muted">Active</span><span id="llmRuntimeActive">-</span></div>
+            <div><span class="muted">Config</span><span id="llmRuntimeConfig">-</span></div>
+          </div>
+          <div class="runtime-controls">
+            <select id="llmRuntimeModelSelect" aria-label="LLM model select"></select>
+            <label class="runtime-force">
+              <input type="checkbox" id="llmRuntimeForce" />
+              Force
+            </label>
+            <button id="llmRuntimeRefresh" class="btn ghost" type="button">Refresh</button>
+            <button id="llmRuntimeLoad" class="btn" type="button">Load</button>
+            <button id="llmRuntimeUnload" class="btn ghost" type="button">Unload</button>
+          </div>
+        </div>
         <div class="table-wrap outlined">
           <div class="table-grid table-head geom">
             <div>Resource</div>
             <div>Type</div>
             <div>Status</div>
-            <div>Docs</div>
+            <div>Docs / Model</div>
             <div>Updated</div>
             <div>Endpoint</div>
           </div>

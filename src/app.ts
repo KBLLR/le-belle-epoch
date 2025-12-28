@@ -1,3 +1,14 @@
+import {
+  fetchModelRuntimeStatus,
+  loadRuntimeModel,
+  refreshRuntimePanel,
+  setRuntimeStatusText,
+  updateRuntimePanel,
+  unloadRuntimeModel,
+  trimModelId
+} from "./runtime/runtime-panel";
+import type { RuntimePanelElements } from "./runtime/types";
+
 type Post = {
   id: string;
   title: string;
@@ -22,6 +33,36 @@ type SystemRow = {
   docs: string;
   updated: string;
   endpoint: string;
+};
+
+type EcosystemServicePayload = {
+  ok?: boolean;
+  base_url?: string;
+  model_id?: string | null;
+  model_type?: string | null;
+  loaded?: boolean;
+  embedding_model?: string | null;
+  stats?: {
+    ok?: boolean;
+    data?: Record<string, unknown> | null;
+  } | null;
+};
+
+type EcosystemStatus = {
+  status?: string;
+  generated_at?: number | string;
+  collection?: string;
+  services?: {
+    llm?: EcosystemServicePayload | null;
+    rag?: EcosystemServicePayload | null;
+    audio?: EcosystemServicePayload | null;
+    vlm?: EcosystemServicePayload | null;
+    mcp?: EcosystemServicePayload | null;
+  };
+};
+
+type ModelListResponse = {
+  data?: { id?: string | null }[];
 };
 
 const fallbackPosts: PostsPayload = {
@@ -90,12 +131,35 @@ const chatPanel = qs<HTMLElement>("#chatPanel");
 const chatHistory = qs<HTMLDivElement>("#chatHistory");
 const chatForm = qs<HTMLFormElement>("#chatForm");
 const chatInput = qs<HTMLInputElement>("#chatInput");
+const llmRuntimeLoaded = qs<HTMLElement>("#llmRuntimeLoaded");
+const llmRuntimeModel = qs<HTMLElement>("#llmRuntimeModel");
+const llmRuntimeType = qs<HTMLElement>("#llmRuntimeType");
+const llmRuntimeQueue = qs<HTMLElement>("#llmRuntimeQueue");
+const llmRuntimeActive = qs<HTMLElement>("#llmRuntimeActive");
+const llmRuntimeConfig = qs<HTMLElement>("#llmRuntimeConfig");
+const llmRuntimeStatus = qs<HTMLElement>("#llmRuntimeStatus");
+const llmRuntimeModelSelect = qs<HTMLSelectElement>("#llmRuntimeModelSelect");
+const llmRuntimeRefresh = qs<HTMLButtonElement>("#llmRuntimeRefresh");
+const llmRuntimeUnload = qs<HTMLButtonElement>("#llmRuntimeUnload");
+const llmRuntimeLoad = qs<HTMLButtonElement>("#llmRuntimeLoad");
+const llmRuntimeForce = qs<HTMLInputElement>("#llmRuntimeForce");
 
 const formatDate = (value?: string): string => {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toISOString().slice(0, 10);
+};
+
+const formatTimestamp = (value?: string | number | null): string => {
+  if (value == null) return "-";
+  if (typeof value === "number") {
+    const ms = value < 100000000000 ? value * 1000 : value;
+    const date = new Date(ms);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toISOString().slice(0, 16).replace("T", " ");
+  }
+  return formatDate(value);
 };
 
 const setHeroTerminal = () => {
@@ -183,53 +247,234 @@ const renderTableRows = (rows: SystemRow[]) => {
   });
 };
 
-const fetchJson = async (url: string): Promise<{ ok: boolean; data?: any } > => {
+const fetchJson = async (url: string): Promise<{ ok: boolean; data?: any }> => {
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return { ok: false };
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     return { ok: true, data };
   } catch {
     return { ok: false };
   }
 };
 
+const populateRuntimeModelSelect = (
+  select: HTMLSelectElement,
+  models: string[],
+  activeModel?: string
+) => {
+  select.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select model";
+  select.appendChild(placeholder);
+
+  const modelSet = new Set(models.filter(Boolean));
+  if (activeModel) {
+    modelSet.add(activeModel);
+  }
+
+  Array.from(modelSet)
+    .sort()
+    .forEach((modelId) => {
+      const option = document.createElement("option");
+      option.value = modelId;
+      option.textContent = trimModelId(modelId);
+      option.title = modelId;
+      select.appendChild(option);
+    });
+
+  if (activeModel && modelSet.has(activeModel)) {
+    select.value = activeModel;
+  }
+};
+
+const loadRuntimeModels = async (llmBaseUrl: string): Promise<string[]> => {
+  const response = await fetchJson(`${llmBaseUrl}/v1/models`);
+  if (!response.ok || !response.data) return [];
+  const payload = response.data as ModelListResponse;
+  if (!Array.isArray(payload.data)) return [];
+  return payload.data.map((model) => model.id).filter(Boolean) as string[];
+};
+
+const getRuntimeElements = (): RuntimePanelElements | null => {
+  if (
+    !llmRuntimeLoaded ||
+    !llmRuntimeModel ||
+    !llmRuntimeType ||
+    !llmRuntimeQueue ||
+    !llmRuntimeActive ||
+    !llmRuntimeConfig ||
+    !llmRuntimeStatus ||
+    !llmRuntimeModelSelect ||
+    !llmRuntimeRefresh ||
+    !llmRuntimeUnload ||
+    !llmRuntimeLoad ||
+    !llmRuntimeForce
+  ) {
+    return null;
+  }
+  return {
+    llmRuntimeLoaded,
+    llmRuntimeModel,
+    llmRuntimeType,
+    llmRuntimeQueue,
+    llmRuntimeActive,
+    llmRuntimeConfig,
+    llmRuntimeStatus,
+    llmRuntimeModelSelect,
+    llmRuntimeRefresh,
+    llmRuntimeUnload,
+    llmRuntimeLoad,
+    llmRuntimeForce
+  };
+};
+
+const initRuntimePanel = async () => {
+  const els = getRuntimeElements();
+  if (!els) return;
+  if (!config.llmBaseUrl) {
+    setRuntimeStatusText(els, "Missing LLM base URL.");
+    return;
+  }
+  const [models, status] = await Promise.all([
+    loadRuntimeModels(config.llmBaseUrl),
+    fetchModelRuntimeStatus(config.llmBaseUrl)
+  ]);
+  updateRuntimePanel(els, status);
+  const activeModel = status?.model_id || status?.model_path || "";
+  populateRuntimeModelSelect(els.llmRuntimeModelSelect, models, activeModel);
+
+  els.llmRuntimeRefresh.addEventListener("click", () => {
+    void refreshRuntimePanel(els, config.llmBaseUrl);
+  });
+  els.llmRuntimeLoad.addEventListener("click", () => {
+    void loadRuntimeModel(els, config.llmBaseUrl);
+  });
+  els.llmRuntimeUnload.addEventListener("click", () => {
+    void unloadRuntimeModel(els, config.llmBaseUrl);
+  });
+};
+
+const extractRagStats = (
+  payload?: { ok?: boolean; data?: Record<string, unknown> | null } | Record<string, unknown> | null
+) => {
+  if (!payload) return null;
+  const payloadRecord = payload as { ok?: boolean; data?: Record<string, unknown> | null };
+  const data =
+    typeof payloadRecord.ok === "boolean"
+      ? payloadRecord.ok
+        ? payloadRecord.data
+        : null
+      : (payload as Record<string, unknown>);
+  if (!data) return null;
+  const count =
+    (data.num_documents as number | undefined) ??
+    (data.documents as number | undefined) ??
+    (data.count as number | undefined);
+  const updated =
+    (data.updated_at as string | undefined) ??
+    (data.generated_at as string | undefined) ??
+    (data.created_at as string | undefined);
+  return {
+    count: count != null ? String(count) : "-",
+    updated: formatTimestamp(updated)
+  };
+};
+
 const loadSystemRows = async (): Promise<SystemRow[]> => {
   const rows: SystemRow[] = [];
+  let ecosystem: EcosystemStatus | null = null;
 
-  const services = [
-    { resource: "mlx-llm", type: "service", base: config.llmBaseUrl, health: "/health" },
-    { resource: "mlx-rag", type: "service", base: config.ragBaseUrl, health: "/health" },
-    { resource: "mlx-audio", type: "service", base: config.audioBaseUrl, health: "/health" }
-  ];
+  if (config.llmBaseUrl) {
+    const ecosystemResponse = await fetchJson(
+      `${config.llmBaseUrl}/internal/ecosystem/status?collection=anthology`
+    );
+    if (ecosystemResponse.ok && ecosystemResponse.data) {
+      ecosystem = ecosystemResponse.data as EcosystemStatus;
+    }
+  }
 
-  for (const service of services) {
-    const health = await fetchJson(`${service.base}${service.health}`);
-    rows.push({
-      resource: service.resource,
-      type: service.type,
-      status: health.ok ? "ok" : "down",
-      docs: "-",
-      updated: "-",
-      endpoint: service.base
-    });
+  if (ecosystem?.services) {
+    const updated = formatTimestamp(ecosystem.generated_at);
+    const addServiceRow = (
+      label: string,
+      service: EcosystemServicePayload | null | undefined,
+      fallbackBase: string,
+      docs: string
+    ) => {
+      rows.push({
+        resource: label,
+        type: "service",
+        status: service ? (service.ok ? "ok" : "down") : "unknown",
+        docs,
+        updated,
+        endpoint: service?.base_url || fallbackBase || "-"
+      });
+    };
+
+    const llmService = ecosystem.services.llm || null;
+    const llmDocs = llmService
+      ? llmService.model_id
+        ? trimModelId(llmService.model_id)
+        : llmService.loaded
+        ? "loaded"
+        : "unloaded"
+      : "-";
+    addServiceRow("mlx-llm", llmService, config.llmBaseUrl, llmDocs);
+
+    const ragService = ecosystem.services.rag || null;
+    const ragDocs = ragService?.embedding_model
+      ? trimModelId(ragService.embedding_model)
+      : "-";
+    addServiceRow("mlx-rag", ragService, config.ragBaseUrl, ragDocs);
+
+    addServiceRow("mlx-audio", ecosystem.services.audio || null, config.audioBaseUrl, "-");
+    if (ecosystem.services.vlm) {
+      addServiceRow("mlx-vlm", ecosystem.services.vlm, "-", "-");
+    }
+    if (ecosystem.services.mcp) {
+      addServiceRow("mlx-mcp", ecosystem.services.mcp, "-", "-");
+    }
+  } else {
+    const services = [
+      { resource: "mlx-llm", type: "service", base: config.llmBaseUrl, health: "/health" },
+      { resource: "mlx-rag", type: "service", base: config.ragBaseUrl, health: "/health" },
+      { resource: "mlx-audio", type: "service", base: config.audioBaseUrl, health: "/health" }
+    ];
+
+    for (const service of services) {
+      const health = await fetchJson(`${service.base}${service.health}`);
+      rows.push({
+        resource: service.resource,
+        type: service.type,
+        status: health.ok ? "ok" : "down",
+        docs: "-",
+        updated: "-",
+        endpoint: service.base
+      });
+    }
   }
 
   const collections = ["anthology", "blog", "projects"];
   for (const collection of collections) {
-    const stats = await fetchJson(
-      `${config.ragBaseUrl}/rag_stats?collection=${encodeURIComponent(collection)}`
-    );
-    const count = stats.ok
-      ? String(stats.data?.count ?? stats.data?.documents ?? "-")
-      : "-";
-    const updated = stats.ok
-      ? formatDate(stats.data?.updated_at || stats.data?.generated_at)
-      : "-";
+    let statsPayload: { ok?: boolean; data?: Record<string, unknown> | null } | null = null;
+    if (ecosystem?.services?.rag?.stats && ecosystem.collection === collection) {
+      statsPayload = ecosystem.services.rag.stats;
+    } else {
+      const statsResponse = await fetchJson(
+        `${config.ragBaseUrl}/rag_stats?collection=${encodeURIComponent(collection)}`
+      );
+      statsPayload = statsResponse.ok ? { ok: true, data: statsResponse.data } : null;
+    }
+
+    const parsedStats = extractRagStats(statsPayload);
+    const count = parsedStats?.count ?? "-";
+    const updated = parsedStats?.updated ?? "-";
     rows.push({
       resource: `rag:${collection}`,
       type: "collection",
-      status: stats.ok ? "ok" : "down",
+      status: parsedStats ? "ok" : "down",
       docs: count,
       updated,
       endpoint: `${config.ragBaseUrl}/rag_stats`
@@ -315,6 +560,7 @@ const bootstrap = async () => {
 const init = () => {
   initChat();
   initActions();
+  void initRuntimePanel();
   void bootstrap();
 };
 

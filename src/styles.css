@@ -275,6 +275,61 @@ p {
   overflow: hidden;
 }
 
+.runtime-card {
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: var(--g);
+  display: flex;
+  flex-direction: column;
+  gap: var(--g);
+  margin-bottom: calc(var(--g) * 1.5);
+}
+
+.runtime-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--g);
+  text-transform: uppercase;
+}
+
+.runtime-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--g);
+  font-size: 0.85rem;
+}
+
+.runtime-metrics div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.runtime-controls {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: var(--g);
+  align-items: center;
+}
+
+.runtime-controls select {
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 12px;
+  border-radius: 999px;
+}
+
+.runtime-force {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .table-grid {
   display: grid;
   grid-template-columns: 1.4fr 0.8fr 0.8fr 0.6fr 0.9fr 1.4fr;
@@ -510,6 +565,14 @@ p {
   }
 
   .chat-body {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .runtime-controls {
     grid-template-columns: 1fr;
   }
 }
