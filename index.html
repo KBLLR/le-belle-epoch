@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Le Belle Epoch - Anthology Voice and Blog</title>
+    <meta name="description" content="Brutalist newsroom for Anthology posts, voices, and system status." />
+    <meta name="rag-base-url" content="http://127.0.0.1:8011" />
+    <meta name="llm-base-url" content="http://127.0.0.1:8080" />
+    <meta name="audio-base-url" content="http://127.0.0.1:7001" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="grid-lines" aria-hidden="true"></div>
+
+    <header class="topbar outlined">
+      <div class="logo">
+        <span class="logo-mark">KBLLR</span>
+        <span class="logo-sub">Le Belle Epoch</span>
+      </div>
+      <nav class="top-actions">
+        <button class="btn" type="button" data-action="refresh">Refresh</button>
+        <button class="btn" type="button" data-action="toggle-grid">Grid</button>
+      </nav>
+    </header>
+
+    <main class="wrap" id="app">
+      <section class="section hero">
+        <div class="hero-copy">
+          <p class="eyebrow geom">Anthology Voice and Blog Generator</p>
+          <h1>Newspaper front. Terminal back. RAG in the middle.</h1>
+          <p class="lead">
+            Le Belle Epoch turns Anthology knowledge into a brutalist newsroom with
+            voice-first posts, live status tables, and a fast loop from source to signal.
+          </p>
+          <div class="cta-row">
+            <a class="btn" href="#posts">View Posts</a>
+            <a class="btn ghost" href="#systems">System Table</a>
+          </div>
+        </div>
+        <div class="hero-panel outlined">
+          <div class="panel-header geom">Terminal feed</div>
+          <pre id="heroTerminal" class="panel-body"></pre>
+        </div>
+      </section>
+
+      <section class="section headlines" id="headlines">
+        <div class="section-header">
+          <h2>Front page</h2>
+          <p class="muted">Highlights from Anthology and active projects.</p>
+        </div>
+        <div class="headline-grid" id="headlineGrid"></div>
+      </section>
+
+      <section class="section systems" id="systems">
+        <div class="section-header">
+          <h2>Backend table</h2>
+          <p class="muted">Live status from mlx-services with collection rollups.</p>
+        </div>
+        <div class="table-wrap outlined">
+          <div class="table-grid table-head geom">
+            <div>Resource</div>
+            <div>Type</div>
+            <div>Status</div>
+            <div>Docs</div>
+            <div>Updated</div>
+            <div>Endpoint</div>
+          </div>
+          <div id="systemTableBody" class="table-body"></div>
+        </div>
+      </section>
+
+      <section class="section posts" id="posts">
+        <div class="section-header">
+          <h2>Posts and briefs</h2>
+          <p class="muted">Markdown driven, voice ready, and tagged by project.</p>
+        </div>
+        <div id="postList" class="post-list"></div>
+      </section>
+    </main>
+
+    <button id="chatFab" class="chat-fab" type="button" aria-controls="chatPanel" aria-expanded="false">
+      <span class="geom">Chat</span>
+    </button>
+
+    <aside id="chatPanel" class="chat-panel" aria-hidden="true">
+      <div class="chat-header">
+        <div>
+          <div class="geom">Librarian</div>
+          <div class="muted">Avatar + terminal in one panel</div>
+        </div>
+        <button class="icon-btn" type="button" data-action="close-chat">Close</button>
+      </div>
+      <div class="chat-body">
+        <div class="chat-left">
+          <div class="avatar-block outlined">
+            <div class="avatar-placeholder">Avatar feed</div>
+          </div>
+          <div class="terminal-block outlined">
+            <div class="terminal-title geom">Terminal</div>
+            <pre id="chatTerminal" class="terminal-output"></pre>
+          </div>
+        </div>
+        <div class="chat-right">
+          <div id="chatHistory" class="chat-history"></div>
+          <form id="chatForm" class="chat-input" autocomplete="off">
+            <input id="chatInput" name="chatInput" type="text" placeholder="Ask for headlines or a brief..." />
+            <button type="submit" class="btn">Send</button>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>

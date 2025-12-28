@@ -1,0 +1,62 @@
+{
+  "generated_at": "2025-12-28T21:25:18.055Z",
+  "posts": [
+    {
+      "id": "anthology-brief-001",
+      "title": "Anthology brief: what changed this week",
+      "summary": "Snapshot of new documents, system shifts, and active experiments.",
+      "tags": [
+        "anthology",
+        "summary"
+      ],
+      "project": "Anthology",
+      "voice_id": "kokoro_default",
+      "published_at": "Sun Dec 28 2025 01:00:00 GMT+0100 (Central European Standard Time)",
+      "source_path": "anthology/COREX_ANTHOLOGY_INDEX.md",
+      "content_md": "This brief highlights the latest Anthology entries, priority changes, and the current state of live systems. It is meant to be read aloud, tagged for retrieval, and re-cut into quick summaries as needed.",
+      "content_html": "<p>This brief highlights the latest Anthology entries, priority changes, and the current state of live systems. It is meant to be read aloud, tagged for retrieval, and re-cut into quick summaries as needed.</p>\n"
+    },
+    {
+      "id": "generator-003",
+      "title": "Generator pipeline: markdown to posts.json",
+      "summary": "Outline of the static build flow and runtime overlays.",
+      "tags": [
+        "blog",
+        "pipeline"
+      ],
+      "project": "le-belle-epoch",
+      "voice_id": "kokoro_default",
+      "published_at": "Fri Dec 26 2025 01:00:00 GMT+0100 (Central European Standard Time)",
+      "content_md": "The build pipeline converts markdown front matter into a posts.json snapshot for fast loading, with optional HTML generation for static pages. This keeps the UI responsive in both local and MLX-first environments.",
+      "content_html": "<p>The build pipeline converts markdown front matter into a posts.json snapshot for fast loading, with optional HTML generation for static pages. This keeps the UI responsive in both local and MLX-first environments.</p>\n"
+    },
+    {
+      "id": "systems-004",
+      "title": "System table: mlx-services alignment",
+      "summary": "Status boards for llm, rag, audio, and mcp endpoints.",
+      "tags": [
+        "mlx",
+        "status"
+      ],
+      "project": "mlx-services",
+      "voice_id": "kokoro_default",
+      "published_at": "Thu Dec 25 2025 01:00:00 GMT+0100 (Central European Standard Time)",
+      "content_md": "A structured table view keeps service status and collection coverage visible at a glance. This page is the anchor for system reliability and the launch point for deeper diagnostics.",
+      "content_html": "<p>A structured table view keeps service status and collection coverage visible at a glance. This page is the anchor for system reliability and the launch point for deeper diagnostics.</p>\n"
+    },
+    {
+      "id": "voice-notes-002",
+      "title": "Voice notes: RAG maintenance signals",
+      "summary": "Covers collection health, sync gaps, and query thresholds.",
+      "tags": [
+        "rag",
+        "maintenance"
+      ],
+      "project": "mlx-services",
+      "voice_id": "kokoro_default",
+      "published_at": "Sat Dec 27 2025 01:00:00 GMT+0100 (Central European Standard Time)",
+      "content_md": "Quick voice-ready notes for RAG alignment: health checks, collection stats, and thresholds that need review. Use this as a template for operational briefings.",
+      "content_html": "<p>Quick voice-ready notes for RAG alignment: health checks, collection stats, and thresholds that need review. Use this as a template for operational briefings.</p>\n"
+    }
+  ]
+}

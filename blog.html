@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KBLLR — Brutalist Dev Blog</title>
+  <meta name="description" content="Monochrome, brutalist developer blog — grid-first, oversized type, code-forward." />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --fg: #f2f2f2;
+      --muted: #9a9a9a;
+      --grid: rgba(255,255,255,0.14);
+      --accent: #ffffff;
+      --g: 12px;              /* grid gutter */
+      --row: 24px;            /* virtual row height for coordinates */
+      --maxw: 1280px;         /* container width */
+      --line: 2px;            /* outline thickness */
+      --navh: 72px;           /* fixed nav height */
+      --glass: rgba(15,15,15,0.58);
+    }
+    body.light {
+      --bg: #f7f7f7;
+      --fg: #0a0a0a;
+      --muted: #4a4a4a;
+      --grid: rgba(0,0,0,0.18);
+      --accent: #000000;
+      --glass: rgba(255,255,255,0.62);
+    }
+
+    /* Base */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      line-height: 1.25;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible { outline: 2px dashed var(--fg); outline-offset: 2px; }
+    img { max-width: 100%; display: block; }
+    svg { display: block; }
+
+    /* Visually hidden (for SVG-only links) */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    /* Oversized, geometric vibe */
+    .geom { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; letter-spacing: 0.02em; }
+    h1, h2, h3 { margin: 0 0 0.5em; line-height: 0.95; letter-spacing: -0.01em; }
+    h1 { font-size: clamp(3rem, 10vw, 7rem); }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.6rem); }
+    p.lead { font-size: clamp(1rem, 1.6vw, 1.25rem); color: var(--muted); margin: 0.25em 0 1em; }
+
+    /* 12-col wrapper */
+    .wrap {
+      width: min(var(--maxw), 94vw);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: var(--g);
+      position: relative;
+      padding-top: calc(var(--navh) + var(--g)); /* offset fixed nav */
+    }
+
+    /* Visible grid overlay */
+    .grid-lines {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        repeating-linear-gradient(
+          to right,
+          transparent 0,
+          transparent calc((100% - 11 * var(--g)) / 12 - 1px),
+          var(--grid) calc((100% - 11 * var(--g)) / 12 - 1px),
+          var(--grid) calc((100% - 11 * var(--g)) / 12)
+        );
+      background-size: calc((100% - 11 * var(--g)) / 12 + var(--g)) 100%;
+      mix-blend-mode: normal;
+      opacity: 0.35;
+    }
+
+    /* Blocks */
+    .outlined { border: var(--line) solid var(--grid); }
+    .section { grid-column: 1 / -1; position: relative; z-index: 1; }
+
+    /* Fixed, glassy Top bar */
+    .topbar {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: min(var(--maxw), 94vw);
+      height: var(--navh);
+      display: grid; grid-template-columns: 1fr auto; align-items: center;
+      padding: 0 var(--g);
+      background: var(--glass);
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      border: var(--line) solid var(--grid); border-top: 0; border-radius: 0; /* sharp */
+      z-index: 1000;
+    }
+    .logo { display: inline-flex; align-items: baseline; gap: 10px; text-transform: uppercase; }
+    .logo a { display: inline-block; padding: 6px 8px; }
+    .logo .short { font-weight: 800; font-size: clamp(1.2rem, 3vw, 2rem); }
+    .logo .long { font-weight: 600; font-size: clamp(0.9rem, 2vw, 1.25rem); color: var(--muted); opacity: 0; transition: opacity .15s linear; }
+    .logo:hover .long { opacity: 1; }
+
+    .actions { display: flex; gap: var(--g); align-items: center; }
+    .btn, .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 12px 16px; border: var(--line) solid var(--fg);
+      background: transparent; color: var(--fg); cursor: pointer; text-transform: uppercase; font-weight: 700;
+      letter-spacing: 0.03em; border-radius: 0; transition: transform .06s ease;
+    }
+    .btn:hover, .icon-btn:hover { transform: translateY(-1px); }
+    .icon-btn { padding: 10px; width: 44px; height: 44px; }
+
+    /* Hero */
+    .hero { grid-column: 1 / -1; display: grid; grid-template-columns: inherit; gap: inherit; padding: calc(var(--g) * 2) 0 calc(var(--g) * 3); overflow: hidden; }
+    .hero .content { grid-column: 1 / -1; display: grid; grid-template-columns: inherit; gap: inherit; align-items: end; min-height: min(72vh, 820px); }
+    .hero .stack { grid-column: 1 / span 8; }
+    .hero .ctas { display: flex; gap: var(--g); margin-top: 20px; }
+
+    /* Terminal background */
+    .termBG { position: absolute; inset: 0; z-index: 0; overflow: hidden; opacity: 0.5;
+      background: repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px); }
+    .termWindow {
+      position: absolute; right: var(--g); bottom: var(--g); left: var(--g); top: var(--g);
+      border: var(--line) solid var(--grid); background: linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.35));
+      padding: 16px; display: flex; flex-direction: column; gap: 8px; overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      clip-path: inset(0 round 0);
+    }
+    .termTitle { color: var(--muted); font-size: 12px; }
+    .termPre { flex: 1; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: clamp(12px, 1.4vw, 14px); line-height: 1.4; color: var(--fg); white-space: pre-wrap; }
+
+    /* Features — asymmetrical grid of code cards */
+    .features { grid-column: 1 / -1; padding: calc(var(--g) * 2) var(--g); }
+    .cards { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--g); margin-top: 12px; }
+    .card { position: relative; display: grid; grid-template-rows: auto 1fr; gap: 8px; padding: var(--g); border: var(--line) solid var(--grid); background: rgba(255,255,255,0.02); cursor: pointer; }
+    .card h3 { font-size: 1rem; text-transform: uppercase; color: var(--muted); }
+
+    /* Asymmetry via spans */
+    .card:nth-child(1) { grid-column: span 7; }
+    .card:nth-child(2) { grid-column: span 5; }
+    .card:nth-child(3) { grid-column: span 4; }
+    .card:nth-child(4) { grid-column: span 8; }
+    .card:nth-child(5) { grid-column: span 6; }
+    .card:nth-child(6) { grid-column: span 6; }
+
+    .tabs { display: flex; gap: 8px; align-items: center; border-bottom: var(--line) solid var(--grid); padding-bottom: 6px; }
+    .tab { background: transparent; color: var(--fg); border: var(--line) solid var(--grid); padding: 8px 10px; text-transform: uppercase; font-weight: 800; cursor: pointer; border-radius: 0; }
+    .tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+    .open { margin-left: auto; }
+    .codepanel { margin: 0; overflow: auto; max-height: 38vh; }
+    .codepanel[hidden] { display: none; }
+    pre code { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: clamp(12px, 1.5vw, 14px); }
+
+    .tooltip { position: relative; }
+    .tooltip[data-show]::after {
+      content: attr(data-tip);
+      position: absolute; top: -32px; right: 0; background: var(--fg); color: var(--bg);
+      padding: 6px 8px; font-size: 12px; border: var(--line) solid var(--grid); white-space: nowrap; pointer-events: none;
+    }
+
+    /* Modal */
+    #postModal { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: rgba(0,0,0,0.55); }
+    #postModal[hidden] { display: none; }
+    .modalCard { width: min(980px, 94vw); max-height: 86vh; overflow: hidden; background: var(--glass); backdrop-filter: blur(12px) saturate(140%); -webkit-backdrop-filter: blur(12px) saturate(140%); border: var(--line) solid var(--grid); display: grid; grid-template-rows: auto auto 1fr; }
+    .modalHead { display: grid; grid-template-columns: 1fr auto; gap: var(--g); align-items: center; padding: 10px; border-bottom: var(--line) solid var(--grid); }
+    .modalTitle { font-weight: 800; text-transform: uppercase; }
+    .modalMeta { color: var(--muted); padding: 6px 10px; border-bottom: var(--line) solid var(--grid); }
+    .modalTabs { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: var(--line) solid var(--grid); }
+    .modalBody { overflow: auto; padding: 10px; }
+
+    /* Footer — adopt the logo-wall look */
+    footer { grid-column: 1 / -1; padding: calc(var(--g) * 2) var(--g); border-top: var(--line) solid var(--grid); }
+    .footer-wall { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--g); align-items: stretch; }
+    .brand { border: var(--line) solid var(--grid); height: 64px; display: grid; place-items: center; background: transparent; }
+    .brand svg { width: 100%; height: 100%; }
+    .brand a { width: 100%; height: 100%; display: grid; place-items: center; }
+    .brand text { font-family: monospace; font-size: 18px; fill: currentColor; }
+
+    /* Article page tweaks (kept for possible future push-page view) */
+    .article-hero { grid-column: 1 / -1; padding: calc(var(--g)*2) var(--g); }
+    .article-title { grid-column: 2 / span 10; }
+    .article-meta { grid-column: 2 / span 10; color: var(--muted); margin-bottom: var(--g); }
+    .article-body { grid-column: 2 / span 8; padding: 0 var(--g) var(--g); }
+    .article-body h1, .article-body h2, .article-body h3 { margin-top: 1.2em; }
+    .article-body p { margin: 0 0 1em; }
+    .pullquote { border-left: var(--line) solid var(--grid); padding-left: var(--g); margin: 1.2em 0; color: var(--muted); font-style: italic; }
+
+    /* Cursor coordinate badge */
+    #cursorCoord { position: fixed; z-index: 999; pointer-events: none; background: var(--fg); color: var(--bg); padding: 4px 6px; font: 11px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border: var(--line) solid var(--grid); transform: translate(10px, -10px); }
+
+    /* Manual copy overlay */
+    #copyOverlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6); display: grid; place-items: center; }
+    #copyOverlay[hidden] { display: none; }
+    .copyBox { width: min(880px, 92vw); background: var(--bg); color: var(--fg); border: var(--line) solid var(--grid); padding: 12px; display: grid; gap: 10px; }
+    .copyHead { display: flex; align-items: center; justify-content: space-between; }
+    .copyBox textarea { width: 100%; min-height: 220px; background: transparent; color: var(--fg); border: var(--line) solid var(--grid); padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
+    .hint { color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .hero .stack { grid-column: 1 / -1; }
+      .card { grid-column: 1 / -1 !important; }
+      .footer-wall > * { grid-column: span 6 !important; }
+      .article-title, .article-meta, .article-body { grid-column: 1 / -1; }
+      .modalCard { width: 96vw; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .btn, .icon-btn { transition: none; }
+      .topbar { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-lines" aria-hidden="true"></div>
+  <a href="#main" class="geom" style="position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to content</a>
+
+  <!-- Fixed, glassy navbar living outside the grid for robustness -->
+  <div class="topbar" role="banner">
+    <div class="logo geom" aria-label="KBLLR Caballero logo">
+      <a href="#" title="KBLLR — hover to reveal">
+        <span class="short" aria-hidden="false">KBLLR</span>
+        <span class="long" aria-hidden="true">Caballero</span>
+      </a>
+    </div>
+    <div class="actions">
+      <button id="invert" class="icon-btn" aria-pressed="false" aria-label="Invert theme">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+          <rect x="3" y="3" width="9" height="18" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="toggleGrid" class="icon-btn" aria-pressed="true" aria-label="Toggle grid lines">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+          <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+      <button id="runTests" class="icon-btn tooltip" data-tip="Run tests" aria-label="Run self-tests">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+          <path d="M7 12l3 3 7-7" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+      <a class="btn" href="#" accesskey="s" title="Start free [Alt/Opt + S]">Start free</a>
+      <a class="btn" href="#features" accesskey="d" title="Docs [Alt/Opt + D]">Docs</a>
+    </div>
+  </div>
+
+  <main id="main" class="wrap">
+    <!-- Hero with terminal background -->
+    <header class="section hero outlined" aria-label="Hero">
+      <div class="termBG" aria-hidden="true">
+        <div class="termWindow geom" aria-hidden="true">
+          <div class="termTitle">demo@kbllr:~$ live API call</div>
+          <pre class="termPre" id="termOut"></pre>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stack">
+          <h1 class="geom">Brutal. Grid. Code.</h1>
+          <p class="lead">A monochrome, sharp‑edged dev blog theme with a strict 12‑column spine and code‑first taste.</p>
+          <div class="ctas">
+            <a class="btn" href="#" aria-label="Start free">Start free</a>
+            <a class="btn" href="#features" aria-label="Read docs">Docs</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Features: Code snippet cards with MD default -->
+    <section id="features" class="section features outlined" aria-label="Featured posts">
+      <h2 class="geom" style="grid-column: 1 / -1;">Latest code posts</h2>
+      <div class="cards">
+        <!-- Card Template 1 -->
+        <article class="card" aria-labelledby="post1-title" tabindex="0" data-author="KBLLR Team" data-date="2025-08-30">
+          <h3 id="post1-title" class="geom">Auth in one curl</h3>
+          <div class="tabs" role="tablist" aria-label="Content types">
+            <button class="tab" role="tab" aria-selected="true" id="post1-tab-md" aria-controls="post1-panel-md" data-lang="md">MD</button>
+            <button class="tab" role="tab" aria-selected="false" id="post1-tab-js" aria-controls="post1-panel-js" data-lang="js">JS</button>
+            <button class="tab" role="tab" aria-selected="false" id="post1-tab-py" aria-controls="post1-panel-py" data-lang="py">Python</button>
+            <button class="tab" role="tab" aria-selected="false" id="post1-tab-curl" aria-controls="post1-panel-curl" data-lang="curl">cURL</button>
+            <button class="icon-btn open tooltip" data-tip="Open" aria-label="Open post" data-target="post1" title="Open">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 9h6v6M9 15l6-6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+          <pre id="post1-panel-md" class="codepanel" role="tabpanel" aria-labelledby="post1-tab-md"><code># Auth in one curl
+
+Short article showing how to request a one-time auth token using curl, and how to swap it for a session.
+
+> Minimal auth keeps friction low — perfect for demos.
+
+1. Request token
+2. Paste code from SMS/email
+3. Receive session JSON
+
+```bash
+curl -X POST https://api.kbllr.dev/v1/auth \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"dev@kbllr.dev"}'
+```
+
+**Tip:** In production, rotate tokens and enforce short TTLs.
+</code></pre>
+          <pre id="post1-panel-js" class="codepanel" role="tabpanel" aria-labelledby="post1-tab-js" hidden><code>import fetch from "node-fetch";
+const r = await fetch("https://api.kbllr.dev/v1/auth", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: "dev@kbllr.dev" })
+});
+console.log(await r.json());</code></pre>
+          <pre id="post1-panel-py" class="codepanel" role="tabpanel" aria-labelledby="post1-tab-py" hidden><code>import requests
+r = requests.post("https://api.kbllr.dev/v1/auth",
+                  json={"email": "dev@kbllr.dev"})
+print(r.json())</code></pre>
+          <pre id="post1-panel-curl" class="codepanel" role="tabpanel" aria-labelledby="post1-tab-curl" hidden><code>curl -X POST https://api.kbllr.dev/v1/auth \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"dev@kbllr.dev"}'</code></pre>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="card" aria-labelledby="post2-title" tabindex="0" data-author="KBLLR Team" data-date="2025-08-29">
+          <h3 id="post2-title" class="geom">Stream completions</h3>
+          <div class="tabs" role="tablist" aria-label="Content types">
+            <button class="tab" role="tab" aria-selected="true" id="post2-tab-md" aria-controls="post2-panel-md" data-lang="md">MD</button>
+            <button class="tab" role="tab" aria-selected="false" id="post2-tab-js" aria-controls="post2-panel-js" data-lang="js">JS</button>
+            <button class="tab" role="tab" aria-selected="false" id="post2-tab-py" aria-controls="post2-panel-py" data-lang="py">Python</button>
+            <button class="tab" role="tab" aria-selected="false" id="post2-tab-curl" aria-controls="post2-panel-curl" data-lang="curl">cURL</button>
+            <button class="icon-btn open tooltip" data-tip="Open" aria-label="Open post" data-target="post2" title="Open">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 9h6v6M9 15l6-6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+          <pre id="post2-panel-md" class="codepanel" role="tabpanel" aria-labelledby="post2-tab-md"><code># Stream completions
+
+Streaming responses reduce TTFB and feel instant. We'll wire up a basic SSE stream and render tokens on arrival.
+
+- Use `fetch` + streaming body in JS
+- Use `requests` + `sseclient` in Python
+
+```js
+for await (const chunk of res.body) process.stdout.write(chunk);
+```
+</code></pre>
+          <pre id="post2-panel-js" class="codepanel" role="tabpanel" aria-labelledby="post2-tab-js" hidden><code>const res = await fetch('/v1/chat', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] })
+});
+for await (const chunk of res.body) process.stdout.write(chunk);</code></pre>
+          <pre id="post2-panel-py" class="codepanel" role="tabpanel" aria-labelledby="post2-tab-py" hidden><code>import sseclient, requests
+r = requests.post('https://api.kbllr.dev/v1/chat', json={
+  'messages':[{'role':'user','content':'Hello'}]
+}, stream=True)
+for event in sseclient.SSEClient(r):
+    print(event.data, end='')</code></pre>
+          <pre id="post2-panel-curl" class="codepanel" role="tabpanel" aria-labelledby="post2-tab-curl" hidden><code>curl -N -X POST https://api.kbllr.dev/v1/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"Hello"}]}'</code></pre>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="card" aria-labelledby="post3-title" tabindex="0" data-author="KBLLR Team" data-date="2025-08-28">
+          <h3 id="post3-title" class="geom">Embed a document</h3>
+          <div class="tabs" role="tablist" aria-label="Content types">
+            <button class="tab" role="tab" aria-selected="true" id="post3-tab-md" aria-controls="post3-panel-md" data-lang="md">MD</button>
+            <button class="tab" role="tab" aria-selected="false" id="post3-tab-js" aria-controls="post3-panel-js" data-lang="js">JS</button>
+            <button class="tab" role="tab" aria-selected="false" id="post3-tab-py" aria-controls="post3-panel-py" data-lang="py">Python</button>
+            <button class="tab" role="tab" aria-selected="false" id="post3-tab-curl" aria-controls="post3-panel-curl" data-lang="curl">cURL</button>
+            <button class="icon-btn open tooltip" data-tip="Open" aria-label="Open post" data-target="post3" title="Open">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 9h6v6M9 15l6-6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+          <pre id="post3-panel-md" class="codepanel" role="tabpanel" aria-labelledby="post3-tab-md"><code># Embed a document
+
+Embeddings turn text into vectors. We'll create an index-friendly representation and store the vector id.
+
+```bash
+curl -X POST https://api.kbllr.dev/v1/embeddings \
+  -H 'Content-Type: application/json' \
+  -d '{"input":"Brutal simplicity > shiny complexity"}'
+```
+</code></pre>
+          <pre id="post3-panel-js" class="codepanel" role="tabpanel" aria-labelledby="post3-tab-js" hidden><code>await fetch('/v1/embeddings', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ input: 'Brutal simplicity > shiny complexity' })
+});</code></pre>
+          <pre id="post3-panel-py" class="codepanel" role="tabpanel" aria-labelledby="post3-tab-py" hidden><code>import requests
+requests.post('https://api.kbllr.dev/v1/embeddings', json={
+  'input': 'Brutal simplicity > shiny complexity'
+})</code></pre>
+          <pre id="post3-panel-curl" class="codepanel" role="tabpanel" aria-labelledby="post3-tab-curl" hidden><code>curl -X POST https://api.kbllr.dev/v1/embeddings \
+  -H 'Content-Type: application/json' \
+  -d '{"input":"Brutal simplicity > shiny complexity"}'</code></pre>
+        </article>
+
+        <!-- Card 4 -->
+        <article class="card" aria-labelledby="post4-title" tabindex="0" data-author="KBLLR Team" data-date="2025-08-27">
+          <h3 id="post4-title" class="geom">Upload & transcribe</h3>
+          <div class="tabs" role="tablist" aria-label="Content types">
+            <button class="tab" role="tab" aria-selected="true" id="post4-tab-md" aria-controls="post4-panel-md" data-lang="md">MD</button>
+            <button class="tab" role="tab" aria-selected="false" id="post4-tab-js" aria-controls="post4-panel-js" data-lang="js">JS</button>
+            <button class="tab" role="tab" aria-selected="false" id="post4-tab-py" aria-controls="post4-panel-py" data-lang="py">Python</button>
+            <button class="tab" role="tab" aria-selected="false" id="post4-tab-curl" aria-controls="post4-panel-curl" data-lang="curl">cURL</button>
+            <button class="icon-btn open tooltip" data-tip="Open" aria-label="Open post" data-target="post4" title="Open">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 9h6v6M9 15l6-6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+          <pre id="post4-panel-md" class="codepanel" role="tabpanel" aria-labelledby="post4-tab-md"><code># Upload & transcribe
+
+Transcription turns audio into text. We'll push a file with multipart form data and poll for results if needed.
+
+```bash
+curl -X POST https://api.kbllr.dev/v1/transcribe -F file=@audio.wav
+```
+</code></pre>
+          <pre id="post4-panel-js" class="codepanel" role="tabpanel" aria-labelledby="post4-tab-js" hidden><code>const form = new FormData();
+form.append('file', fileInput.files[0]);
+await fetch('/v1/transcribe', { method: 'POST', body: form });</code></pre>
+          <pre id="post4-panel-py" class="codepanel" role="tabpanel" aria-labelledby="post4-tab-py" hidden><code>import requests
+files = { 'file': open('audio.wav','rb') }
+requests.post('https://api.kbllr.dev/v1/transcribe', files=files)</code></pre>
+          <pre id="post4-panel-curl" class="codepanel" role="tabpanel" aria-labelledby="post4-tab-curl" hidden><code>curl -X POST https://api.kbllr.dev/v1/transcribe \
+  -F file=@audio.wav</code></pre>
+        </article>
+
+        <!-- Card 5 -->
+        <article class="card" aria-labelledby="post5-title" tabindex="0" data-author="KBLLR Team" data-date="2025-08-26">
+          <h3 id="post5-title" class="geom">Moderate content</h3>
+          <div class="tabs" role="tablist" aria-label="Content types">
+            <button class="tab" role="tab" aria-selected="true" id="post5-tab-md" aria-controls="post5-panel-md" data-lang="md">MD</button>
+            <button class="tab" role="tab" aria-selected="false" id="post5-tab-js" aria-controls="post5-panel-js" data-lang="js">JS</button>
+            <button class="tab" role="tab" aria-selected="false" id="post5-tab-py" aria-controls="post5-panel-py" data-lang="py">Python</button>
+            <button class="tab" role="tab" aria-selected="false" id="post5-tab-curl" aria-controls="post5-panel-curl" data-lang="curl">cURL</button>
+            <button class="icon-btn open tooltip" data-tip="Open" aria-label="Open post" data-target="post5" title="Open">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 9h6v6M9 15l6-6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+          <pre id="post5-panel-md" class="codepanel" role="tabpanel" aria-labelledby="post5-tab-md"><code># Moderate content
+
+Automate content safety checks before storage or display. Keep it transparent with action-specific reasons.
+
+```json
+{"safe": true, "categories": {"self-harm": false, "violence": false}}
+```
+</code></pre>
+          <pre id="post5-panel-js" class="codepanel" role="tabpanel" aria-labelledby="post5-tab-js" hidden><code>await fetch('/v1/moderate', {
+  method: 'POST', headers:{'Content-Type':'application/json'},
+  body: JSON.stringify({ text: 'Edge case payload...' })
+});</code></pre>
+          <pre id="post5-panel-py" class="codepanel" role="tabpanel" aria-labelledby="post5-tab-py" hidden><code>import requests
+requests.post('https://api.kbllr.dev/v1/moderate', json={'text':'Edge case payload...'})</code></pre>
+          <pre id="post5-panel-curl" class="codepanel" role="tabpanel" aria-labelledby="post5-tab-curl" hidden><code>curl -X POST https://api.kbllr.dev/v1/moderate \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Edge case payload..."}'</code></pre>
+        </article>
+
+        <!-- Card 6 -->
+        <article class="card" aria-labelledby="post6-title" tabindex="0" data-author="KBLLR Team" data-date="2025-08-25">
+          <h3 id="post6-title" class="geom">Generate image</h3>
+          <div class="tabs" role="tablist" aria-label="Content types">
+            <button class="tab" role="tab" aria-selected="true" id="post6-tab-md" aria-controls="post6-panel-md" data-lang="md">MD</button>
+            <button class="tab" role="tab" aria-selected="false" id="post6-tab-js" aria-controls="post6-panel-js" data-lang="js">JS</button>
+            <button class="tab" role="tab" aria-selected="false" id="post6-tab-py" aria-controls="post6-panel-py" data-lang="py">Python</button>
+            <button class="tab" role="tab" aria-selected="false" id="post6-tab-curl" aria-controls="post6-panel-curl" data-lang="curl">cURL</button>
+            <button class="icon-btn copy tooltip" data-tip="Copied" aria-label="Copy snippet" data-target="post6"><svg viewBox="0 0 24 24" width="18" height="18"><rect x="7" y="7" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"/><rect x="3" y="3" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"/></svg></button>
+          </div>
+          <pre id="post6-panel-md" class="codepanel" role="tabpanel" aria-labelledby="post6-tab-md"><code># Generate image
+
+Text-to-image turns prompts into pixels. We'll call the images endpoint and render the returned URL.
+
+```bash
+curl -X POST https://api.kbllr.dev/v1/images -d '{"prompt":"Monochrome brutalist grid"}'
+```
+</code></pre>
+          <pre id="post6-panel-js" class="codepanel" role="tabpanel" aria-labelledby="post6-tab-js" hidden><code>await fetch('/v1/images', {
+  method: 'POST', headers:{'Content-Type': 'application/json'},
+  body: JSON.stringify({ prompt: 'Monochrome brutalist grid' })
+});</code></pre>
+          <pre id="post6-panel-py" class="codepanel" role="tabpanel" aria-labelledby="post6-tab-py" hidden><code>import requests
+requests.post('https://api.kbllr.dev/v1/images', json={'prompt':'Monochrome brutalist grid'})</code></pre>
+          <pre id="post6-panel-curl" class="codepanel" role="tabpanel" aria-labelledby="post6-tab-curl" hidden><code>curl -X POST https://api.kbllr.dev/v1/images \
+  -H 'Content-Type': application/json' \
+  -d '{"prompt":"Monochrome brutalist grid"}'</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- Footer as a logo-wall variant -->
+    <footer class="section outlined" role="contentinfo">
+      <div class="footer-wall">
+        <!-- Sitemap tiles -->
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Home">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">HOME</text></svg>
+            <span class="sr-only">Home</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#features" aria-label="Docs">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">DOCS</text></svg>
+            <span class="sr-only">Docs</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Blog">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">BLOG</text></svg>
+            <span class="sr-only">Blog</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Changelog">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">CHANGELOG</text></svg>
+            <span class="sr-only">Changelog</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Pricing">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">PRICING</text></svg>
+            <span class="sr-only">Pricing</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="About">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">ABOUT</text></svg>
+            <span class="sr-only">About</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Security">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">SECURITY</text></svg>
+            <span class="sr-only">Security</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Contact">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle">CONTACT</text></svg>
+            <span class="sr-only">Contact</span>
+          </a>
+        </div>
+
+        <!-- Social tiles -->
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="GitHub">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="translate(50,8)"><path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.36-3.37-1.36-.45-1.18-1.1-1.5-1.1-1.5-.9-.63.07-.62.07-.62 1 .07 1.53 1.07 1.53 1.07.9 1.56 2.36 1.11 2.94.84.09-.67.35-1.11.64-1.36-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05.8-.23 1.65-.35 2.5-.35.85 0 1.7.12 2.5.35 1.9-1.32 2.74-1.05 2.74-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.8-4.57 5.06.36.32.69.95.69 1.92 0 1.39-.01 2.51-.01 2.85 0 .27.18.6.69.49A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2Z"/></g></svg>
+            <span class="sr-only">GitHub</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="X">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="translate(50,8)"><path d="M3 3h4.6l4.1 5.9L16.7 3H21l-7.2 9.6L21 21h-4.7l-4.6-6.6L7.2 21H3l7.5-8.9L3 3Z"/></g></svg>
+            <span class="sr-only">X</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="YouTube">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="translate(50,8)"><path d="M23 7.5s-.2-1.6-.8-2.4c-.8-.9-1.7-.9-2.1-1C17.8 4 12 4 12 4h0s-5.8 0-8.1.1c-.4 0-1.3 0-2.1 1C1.2 5.9 1 7.5 1 7.5S.8 9.4.8 11.3v1.4C.8 14.6 1 16.5 1 16.5s.2 1.6.8 2.4c.8.9 1.8.9 2.3 1 1.6.1 7.9.1 7.9.1s5.8 0 8.1-.1c.4 0 1.3 0 2.1-1 .6-.8.8-2.4.8-2.4s.2-1.9.2-3.8v-1.4c0-1.9-.2-3.8-.2-3.8ZM9.8 14.9V7.9l6.2 3.5-6.2 3.5Z"/></g></svg>
+            <span class="sr-only">YouTube</span>
+          </a>
+        </div>
+        <div class="brand" style="grid-column: span 2;">
+          <a href="#" aria-label="Instagram">
+            <svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <g transform="translate(48,8)">
+                <rect x="4" y="4" width="24" height="24" rx="5" ry="5" stroke="currentColor" stroke-width="2" fill="none"/>
+                <circle cx="16" cy="16" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+                <circle cx="23" cy="9" r="2" fill="currentColor"/>
+              </g>
+            </svg>
+            <span class="sr-only">Instagram</span>
+          </a>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Manual copy overlay (appears when Clipboard API is blocked) -->
+  <div id="copyOverlay" hidden role="dialog" aria-modal="true" aria-label="Manual copy dialog">
+    <div class="copyBox outlined geom">
+      <div class="copyHead">
+        <span>Clipboard blocked by environment. Select text and press ⌘C / Ctrl+C.</span>
+        <button class="icon-btn" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" fill="none"><rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </div>
+      <textarea id="copyOverlayTextarea" spellcheck="false"></textarea>
+      <div class="hint">Tip: Press <strong>Esc</strong> or click outside to close.</div>
+    </div>
+  </div>
+
+  <div id="cursorCoord" class="geom" aria-hidden="true" hidden></div>
+
+  <script>
+    // Theme invert toggle
+    const invertBtn = document.getElementById('invert');
+    invertBtn.addEventListener('click', () => {
+      const isLight = document.body.classList.toggle('light');
+      invertBtn.setAttribute('aria-pressed', String(isLight));
+    });
+
+    // Grid toggle
+    const gridBtn = document.getElementById('toggleGrid');
+    const gridLines = document.querySelector('.grid-lines');
+    gridBtn.addEventListener('click', () => {
+      const off = gridLines.style.display === 'none';
+      gridLines.style.display = off ? '' : 'none';
+      gridBtn.setAttribute('aria-pressed', String(off));
+    });
+
+    // Terminal typing demo
+    const termOut = document.getElementById('termOut');
+    const demo = `curl -X POST https://api.kbllr.dev/v1/ingest \\\n  -H 'Authorization: Bearer $TOKEN' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"title":"Brutal Grid","tags":["kbllr","blog"],"content":"Monochrome. Sharp. Fast."}'\n\n# => { id: "doc_01H...", status: "ok" }`;
+    let idx = 0;
+    const speed = 12; // ms per char
+    function typeLoop() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        termOut.textContent = demo; return;
+      }
+      termOut.textContent = demo.slice(0, idx++);
+      if (idx <= demo.length) {
+        setTimeout(typeLoop, speed);
+      } else {
+        setTimeout(() => { idx = 0; termOut.textContent = ''; typeLoop(); }, 1600);
+      }
+    }
+    typeLoop();
+
+    // Copy helpers (Clipboard API with fallbacks)
+    async function copySnippet(text, el) {
+      let tip = 'Copied';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(text); el && showTip(el, tip); return true; } catch (err) {}
+      }
+      const ok = legacyCopy(text);
+      if (ok) { el && showTip(el, tip); return true; }
+      const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+      tip = mac ? 'Press ⌘C' : 'Press Ctrl+C';
+      openCopyOverlay(text); el && showTip(el, tip); return false;
+    }
+    function legacyCopy(text) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){ ok=false;} document.body.removeChild(ta); return ok;
+    }
+    function openCopyOverlay(text) { const overlay = document.getElementById('copyOverlay'); const area = document.getElementById('copyOverlayTextarea'); overlay.hidden = false; area.value = text; setTimeout(() => { area.focus(); area.select(); }, 0); }
+    (function bindOverlay(){ const overlay=document.getElementById('copyOverlay'); overlay.addEventListener('click', (e)=>{ if (e.target===overlay || e.target.closest('[data-close]')) overlay.hidden=true; }); document.addEventListener('keydown', (e)=>{ if (e.key==='Escape' && !overlay.hidden) overlay.hidden=true; }); })();
+
