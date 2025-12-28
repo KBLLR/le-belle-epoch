@@ -142,19 +142,24 @@ export const unloadRuntimeModel = async (
   }
   setRuntimeBusy(els, true);
   setRuntimeStatusText(els, "Unloading model...");
-  const response = await fetch(`${llmBaseUrl}/internal/models/unload`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ force: els.llmRuntimeForce.checked })
-  });
-  if (!response.ok) {
-    const detail = await response.text();
-    setRuntimeStatusText(els, `Unload failed (${response.status}): ${detail}`);
+  try {
+    const response = await fetch(`${llmBaseUrl}/internal/models/unload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ force: els.llmRuntimeForce.checked })
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      setRuntimeStatusText(els, `Unload failed (${response.status}): ${detail}`);
+      return;
+    }
+    await refreshRuntimePanel(els, llmBaseUrl);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    setRuntimeStatusText(els, `Unload failed (network): ${message}`);
+  } finally {
     setRuntimeBusy(els, false);
-    return;
   }
-  await refreshRuntimePanel(els, llmBaseUrl);
-  setRuntimeBusy(els, false);
 };
 
 export const loadRuntimeModel = async (
@@ -172,17 +177,22 @@ export const loadRuntimeModel = async (
   }
   setRuntimeBusy(els, true);
   setRuntimeStatusText(els, `Loading ${modelId}...`);
-  const response = await fetch(`${llmBaseUrl}/internal/models/load`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model_id: modelId, force: els.llmRuntimeForce.checked })
-  });
-  if (!response.ok) {
-    const detail = await response.text();
-    setRuntimeStatusText(els, `Load failed (${response.status}): ${detail}`);
+  try {
+    const response = await fetch(`${llmBaseUrl}/internal/models/load`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_id: modelId, force: els.llmRuntimeForce.checked })
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      setRuntimeStatusText(els, `Load failed (${response.status}): ${detail}`);
+      return;
+    }
+    await refreshRuntimePanel(els, llmBaseUrl);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    setRuntimeStatusText(els, `Load failed (network): ${message}`);
+  } finally {
     setRuntimeBusy(els, false);
-    return;
   }
-  await refreshRuntimePanel(els, llmBaseUrl);
-  setRuntimeBusy(els, false);
 };
